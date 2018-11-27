@@ -645,6 +645,7 @@
 
              function addCamera() {
                             //getting selected option from dropdowns
+                            console.log('flag1');
                             var camURL = document.getElementById("camURL").value;
                        
                             var e1 = document.getElementById("application");
@@ -655,9 +656,9 @@
                            
                             alertstyle = "alert-success";
 
-
                             var icon = '<i class="fa fa-video-camera fa-3x" aria-hidden="true"></i>'
                             var icondiv = '<div class="product-info">' + icon  +'</div>'
+                            console.log('flag2');
 
                             if(detectionMethod == "opencv"){
                                 dlibDetection = false;
@@ -672,6 +673,8 @@
                             else{
                                 fpstweak = false;
                             }
+
+                            console.log('flag3');
 
                             $('#addcam').html('<i class="fa fa-spin fa-cog fa-3x fa-fw" style="font-size:12px;"></i> Adding Camera');
 

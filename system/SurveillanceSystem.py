@@ -60,9 +60,12 @@ import ImageUtils
 import random
 import psutil
 import math
+import time
+from io import BytesIO
 
 # Get paths for models
-# //////////////////////////////////////////////////////////////////////////////////////////////
+# ////////////////////
+# //////////////////////////////////////////////////////////////////////////
 
 fileDir = os.path.dirname(os.path.realpath(__file__))
 luaDir = os.path.join(fileDir, '..', 'batch-represent')
@@ -160,6 +163,8 @@ class SurveillanceSystem(object):
    def add_camera(self, camera):
         """Adds new camera to the System and generates a 
         frame processing thread"""
+        print("flag0")
+
         self.cameras.append(camera)
         thread = threading.Thread(name='frame_process_thread_' + 
                                  str(len(self.cameras)),
@@ -169,11 +174,22 @@ class SurveillanceSystem(object):
         self.cameraProcessingThreads.append(thread)
         thread.start()
 
+   def config_original(self, url):
+       config_data = {
+           "frame_rate": "5",
+           "resoultion_x": "480",
+           "resoultion_y": "320"
+       }
+       time.sleep(10)
+       res = requests.post(url, data=config_data)
+
    def remove_camera(self, camID):
         """remove a camera to the System and kill its processing thread"""
         self.cameras.pop(camID)
         self.cameraProcessingThreads.pop(camID)
         self.captureThread.stop = False
+
+
 
    def process_frame(self,camera):
         """This function performs all the frame proccessing.
@@ -186,7 +202,8 @@ class SurveillanceSystem(object):
         FPSstart = time.time()
         start = time.time()
         stop = camera.captureThread.stop
-        
+
+
         while not stop:
 
              frame_count +=1
@@ -269,7 +286,7 @@ class SurveillanceSystem(object):
                                   camera.people[predictions['name']] = Person(predictions['rep'],predictions['confidence'], alignedFace, predictions['name'])
                               else: 
                                   camera.people[predictions['name']] = Person(predictions['rep'],predictions['confidence'], alignedFace, "unknown")
-                   
+
                     camera.processing_frame = frame # Used for streaming proccesed frames to client and email alerts, but mainly used for testing purposes
 
               ##################################################################################################################################################
@@ -290,6 +307,16 @@ class SurveillanceSystem(object):
                      if camera.motion == True:
                         logger.debug('////////////////////// MOTION DETECTED //////////////////////')
                         state = 2
+
+                        base_url = camera.url[:-10]
+                        url = base_url + "config"
+                        config_data = {
+                            "frame_rate": "15",
+                            "resoultion_x": "1920",
+                            "resoultion_y": "1080"
+                        }
+                        res = requests.post(url, data=config_data)
+                        threading.Thread(target=self.config_original, args=(url,)).start()
                         camera.processing_frame = mframe
                      else:
                         logger.debug('////////////////////// NO MOTION DETECTED //////////////////////')
@@ -312,6 +339,7 @@ class SurveillanceSystem(object):
                             logger.info('//  No faces found for ' + str(time.time() - start) + ' seconds - Going back to Motion Detection Mode')
                             state = 1
                             frame_count = 0;
+
                     else:
                         logger.info('////  FACES DETECTED: '+ str(len(camera.faceBoxes)) +' ////')
                         # frame = cv2.flip(frame, 1)
@@ -345,6 +373,19 @@ class SurveillanceSystem(object):
 
                         start = time.time() # Used to go back to motion detection state of 30s of not finding a face
                         camera.processing_frame = frame
+
+
+                        image_file = BytesIO()
+                        faceimg.save(image_file, "PNG")
+                        image_file.seek(0)
+
+
+                        files = {'face_img': image_file}
+                        values = {'name': 'photo'}
+                        res = requests.post('http://ec2-18-191-11-172.us-east-2.compute.amazonaws.com:5000/from_edge/', files=files, data=values )
+
+
+
 
               ###################################################################################################################################################################
               #<#####################################>  MOTION DETECTION OBJECT SEGMENTAION FOLLOWED BY FACE DETECTION AND RECOGNITION <#####################################>

@@ -30,7 +30,7 @@ import logging
 import SurveillanceSystem
 import MotionDetector
 import FaceDetector
-
+from urllib2 import urlopen
 #logging.basicConfig(level=logging.DEBUG,
 #                    format='(%(threadName)-10s) %(message)s',
 #                    )
@@ -83,11 +83,14 @@ class IPCamera(object):
 		self.captureEvent = threading.Event()
 		self.captureEvent.set()
 		self.peopleDictLock = threading.Lock() # Used to block concurrent access to people dictionary
+
+
 		self.video = cv2.VideoCapture(camURL) # VideoCapture object used to capture frames from IP camera
 		logger.info("We are opening the video feed.")
-	 	self.url = camURL
+		self.url = camURL
 		if not self.video.isOpened():
-			self.video.open()
+			self.video.open(camURL)
+		print("flag-1")
 		logger.info("Video feed open.")
 		self.dump_video_info()  # logging every specs of the video feed
 		# Start a thread to continuously capture frames.
@@ -107,15 +110,27 @@ class IPCamera(object):
 		warmup = 0
 		#fpsTweak = 0  # set that to 1 if you want to enable Brandon's fps tweak. that break most video feeds so recommend not to
 		FPSstart = time.time()
-
+		stream = urlopen(self.url)
+		bytes = bytearray()
+		success = False
 		while True:
-			success, frame = self.video.read()
-			self.captureEvent.clear() 
-			if success:		
-				self.captureFrame  = frame
-				self.captureEvent.set() 
+			bytes += stream.read(1024)
+			a = bytes.find(b'\xff\xd8')
+			b = bytes.find(b'\xff\xd9')
+			if a != -1 and b != -1:
+				jpg = bytes[a:b + 2]
+				bytes = bytes[b + 2:]
+				i = cv2.imdecode(np.fromstring(str(jpg), dtype=np.uint8), cv2.IMREAD_COLOR)
+				success = True
+				if cv2.waitKey(1) == 27:
+					exit(0)
+			self.captureEvent.clear()
 
-			FPScount += 1 
+			if success:
+				self.captureFrame  = i
+				self.captureEvent.set()
+
+			FPScount += 1
 
 			if FPScount == 5:
 				self.streamingFPS = 5/(time.time() - FPSstart)
@@ -128,6 +143,23 @@ class IPCamera(object):
 						time.sleep(1/CAPTURE_HZ)
 					else:
 						time.sleep(self.streamingFPS/(CAPTURE_HZ*CAPTURE_HZ))
+			success = False
+
+	def read_pi_camera(self):
+		stream = urllib.request.urlopen(self.url)
+		bytes = bytes()
+		success = False
+		while True:
+			bytes += stream.read(1024)
+			a = bytes.find(b'\xff\xd8')
+			b = bytes.find(b'\xff\xd9')
+			if a != -1 and b != -1:
+				jpg = bytes[a:b + 2]
+				bytes = bytes[b + 2:]
+				i = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+				return i, scu
+				if cv2.waitKey(1) == 27:
+					exit(0)
 
 	def read_jpg(self):
 		"""We are using Motion JPEG, and OpenCV captures raw images,

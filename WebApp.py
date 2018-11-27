@@ -145,18 +145,18 @@ def memory_usage():
 @app.route('/add_camera', methods = ['GET','POST'])
 def add_camera():
     """Adds camera new camera to SurveillanceSystem's cameras array"""
-    if request.method == 'POST':
+    if request.method == 'POST':  
         camURL = request.form.get('camURL')
         application = request.form.get('application')
         detectionMethod = request.form.get('detectionMethod')
         fpsTweak = request.form.get('fpstweak')
+        print(camURL)
         with HomeSurveillance.camerasLock :
             HomeSurveillance.add_camera(SurveillanceSystem.Camera.IPCamera(camURL,application,detectionMethod,fpsTweak))
         data = {"camNum": len(HomeSurveillance.cameras) -1}
         app.logger.info("Addding a new camera with url: ")
         app.logger.info(camURL)
         app.logger.info(fpsTweak)
-        print(data)
         return jsonify(data)
     return render_template('index.html')
 
