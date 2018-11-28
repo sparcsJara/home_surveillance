@@ -395,10 +395,10 @@ class SurveillanceSystem(object):
                                         "resolution_y": "320",
                                         "camNum": str(cnt)
                                 }
-                                target_camera.motionDetector = MotionDetector.MotionDetector()
                                 logger.info("cam{} resolution_up : {}".format(cnt,time.time()))
-
                                 res = requests.post(url, data=config_data)
+                                target_camera.motionDetector = MotionDetector.MotionDetector()
+
                                 print(url)
                             self.resolution_up = False
                             continue
@@ -424,9 +424,10 @@ class SurveillanceSystem(object):
                                 "resolution_y": "1080",
                                 "camNum": str(cnt)
                             }
-                            target_camera.motionDetector = MotionDetector.MotionDetector()
                             logger.info("cam{} resolution_down : {}".format(cnt, time.time()))
                             res = requests.post(url, data=config_data)
+                            target_camera.motionDetector = MotionDetector.MotionDetector()
+
                             print(url)
                         resolution_start_time = time.time()
 
