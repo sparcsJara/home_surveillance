@@ -385,7 +385,7 @@ class SurveillanceSystem(object):
                         if time.time() - resolution_start_time  > 10:
                             print("configure originally")
                             cnt = 0
-                            for target_camera in self.cameras
+                            for target_camera in self.cameras:
                                 cnt += 1
                                 base_url = target_camera.url[:-10]
                                 url = base_url + "config"
