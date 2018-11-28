@@ -55,6 +55,8 @@ class MotionDetector(object):
             # Calculate mean standard deviation then determine if motion has actually accurred
             height, width, channels = frame.shape
 
+
+
             text = "Unoccupied"
             occupied = False
             kernel = np.ones((5,5),np.uint8)
@@ -79,6 +81,7 @@ class MotionDetector(object):
             elif self.history == 4:
                 self.previousFrame = self.currentFrame
                 self.currentFrame = gray      
+
                 self.meanFrame = cv2.addWeighted(self.previousFrame,0.5,self.currentFrame,0.5,0)
                 self.history +=1
                 if get_rects == True: # Return peoplerects without frame
@@ -88,7 +91,9 @@ class MotionDetector(object):
             elif self.history == 5:
                 self.previousFrame = self.meanFrame
                 self.currentFrame = gray
+
                 self.meanFrame = cv2.addWeighted(self.previousFrame,0.5,self.currentFrame,0.5,0)
+
                 # cv2.imwrite("avegrayfiltered.jpg", self.meanFrame)
                 self.history +=1
                 if get_rects == True: # Return peoplerects without frame
@@ -101,7 +106,18 @@ class MotionDetector(object):
                 self.history = 0
             logger.debug('////////////////////// averaging complete //////////////////////')
             # Compute the absolute difference between the current frame and first frame
-            frameDelta = cv2.absdiff(self.meanFrame , gray)
+
+            try:
+                frameDelta = cv2.absdiff(self.meanFrame , gray)
+            except cv2.error as e:
+                self.meanFrame = gray
+                print("meanframe")
+                print(self.meanFrame.shape)
+                print("gray")
+                print(gray.shape)
+                return occupied, frame
+
+
             thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
             thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel) # Removes small holes i.e noise
             thresh = cv2.dilate(thresh, kernel, iterations=3) # Increases white region by saturating blobs

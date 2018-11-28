@@ -112,6 +112,7 @@ def gen(camera):
 @app.route('/video_streamer/<camNum>')
 def video_streamer(camNum):
     """Used to stream frames to client, camNum represents the camera index in the cameras array"""
+
     return Response(gen(HomeSurveillance.cameras[int(camNum)]),
                     mimetype='multipart/x-mixed-replace; boundary=frame') # A stream where each part replaces the previous part the multipart/x-mixed-replace content type must be used.
 
@@ -156,9 +157,12 @@ def add_camera():
         app.logger.info("Addding a new camera with url: ")
         app.logger.info(camURL)
         app.logger.info(fpsTweak)
-        print(data)
+
         return jsonify(data)
     return render_template('index.html')
+
+
+
 
 @app.route('/remove_camera', methods = ['GET','POST'])
 def remove_camera():

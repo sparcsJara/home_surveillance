@@ -31,6 +31,7 @@ import SurveillanceSystem
 import MotionDetector
 import FaceDetector
 from urllib2 import urlopen
+
 #logging.basicConfig(level=logging.DEBUG,
 #                    format='(%(threadName)-10s) %(message)s',
 #                    )
@@ -108,13 +109,16 @@ class IPCamera(object):
 		logger.debug('Getting Frames')
 		FPScount = 0
 		warmup = 0
-		#fpsTweak = 0  # set that to 1 if you want to enable Brandon's fps tweak. that break most video feeds so recommend not to
+		# fpsTweak = 0  # set that to 1 if you want to enable Brandon's fps tweak. that break most video feeds so recommend not to
 		FPSstart = time.time()
 		stream = urlopen(self.url)
 		bytes = bytearray()
 		success = False
+
+		a, b = -1, -1
 		while True:
-			bytes += stream.read(1024)
+
+			bytes += stream.read(8192)
 			a = bytes.find(b'\xff\xd8')
 			b = bytes.find(b'\xff\xd9')
 			if a != -1 and b != -1:
@@ -122,28 +126,33 @@ class IPCamera(object):
 				bytes = bytes[b + 2:]
 				i = cv2.imdecode(np.fromstring(str(jpg), dtype=np.uint8), cv2.IMREAD_COLOR)
 				success = True
+				a, b = -1, -1
 				if cv2.waitKey(1) == 27:
 					exit(0)
-			self.captureEvent.clear()
 
+			if cv2.waitKey(1) == 27:
+				exit(0)
+			self.captureEvent.clear()
 			if success:
-				self.captureFrame  = i
+				self.captureFrame = i
 				self.captureEvent.set()
 
 			FPScount += 1
 
 			if FPScount == 5:
-				self.streamingFPS = 5/(time.time() - FPSstart)
+				self.streamingFPS = 5 / (time.time() - FPSstart)
 				FPSstart = time.time()
 				FPScount = 0
 
 			if self.fpsTweak:
 				if self.streamingFPS != 0:  # If frame rate gets too fast slow it down, if it gets too slow speed it up
 					if self.streamingFPS > CAPTURE_HZ:
-						time.sleep(1/CAPTURE_HZ)
+						time.sleep(1 / CAPTURE_HZ)
 					else:
-						time.sleep(self.streamingFPS/(CAPTURE_HZ*CAPTURE_HZ))
+						time.sleep(self.streamingFPS / (CAPTURE_HZ * CAPTURE_HZ))
 			success = False
+
+
 
 	def read_pi_camera(self):
 		stream = urllib.request.urlopen(self.url)
